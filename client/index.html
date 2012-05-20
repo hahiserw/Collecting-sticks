@@ -1,0 +1,175 @@
+<!doctype html>
+
+<html>
+
+<head>
+
+
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<meta charset="utf-8" />
+	<meta name="author" content="Maurycy Skier" />
+	<meta name="description" content="Gra" />
+	<meta name="keywords" content="html5,experiment,javascript,game,Gra" />
+
+	<title>Gra</title>
+	
+
+	<script src="/socket.io/socket.io.js"></script>
+
+	<script src="/lib/raf.js"></script>
+	
+	<script>
+
+
+		( function() {
+
+
+			var WIDTH, HEIGHT;
+			var socket;
+
+
+			var sticks = {
+
+				move: function( x, y ) {
+					socket.emit( "position", { x, y } );
+				}
+
+			};
+
+
+			document.addEventListener( "DOMContentLoaded", function() {
+
+				canvas = document.getElementById( "canvas" );
+				resize();
+
+				socket = io.connect( document.location.origin );
+
+				if( !canvas || !socket )
+					throw "Won't work in 100 years!";
+
+			}, false );
+
+
+			function keyup( event ) {
+
+				var x = 0;
+				var y = 0;
+
+				switch( event.keyCode ) {
+					case 38: //Góra
+					case 87:
+						y = 1;
+						break;
+					case 40: //Dół
+					case 83:
+						y = -1
+						break;
+					case 37: //Lewo
+					case 65:
+						x = -1;
+						break;
+					case 39: //Prawo
+					case 68:
+						x = 1;
+						break;
+				}
+
+				sticks.move( x, y );
+
+			}
+
+			
+			function resize() {
+
+				WIDTH = window.innerWidth;
+				HEIGHT = window.innerHeight;
+				canvas.setAttribute( "width", WIDTH );
+				canvas.setAttribute( "height", HEIGHT );
+
+			}
+
+			window.addEventListener( "resize", resize, false );
+
+			window.addEventListener( "keyup", keyup, false );
+
+
+		} () );
+
+
+	</script>
+
+
+	<style type="text/css">
+
+		body {
+			font-family: Tahoma, Geneva, sans-serif;
+			border: 0;
+			margin: 0;
+			padding: 0;
+			overflow: hidden;
+		}
+
+		#wrapper, #board {
+			width: 100%;
+			height: 100%;
+		}
+
+		#board {
+		}
+
+		canvas {
+		}
+
+		#info {
+			position: absolute;
+			right: 0px;
+			top: 0px;
+			padding: 10px;
+			margin: 10px 30px;
+			width: 300px;
+			text-align: justify;
+			background-color: white;
+		}
+
+		.title {
+			font-size: 26pt;
+			margin-bottom: 10px;
+		}
+
+		.stuff {
+		}
+
+	</style>
+
+
+</head>
+
+<body>
+
+
+	<div id="wrapper">
+
+		<div id="board">
+			<canvas id="canvas">
+				<p>Ta przeglądarka nie obsługuje tagu CANVAS</p>
+			</canvas>
+		</div>
+
+		<div id="info">
+			<div class="title">Gra</div>
+			<div class="stuff">
+				Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod
+				tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam,
+				quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo
+				consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse
+				cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non
+				proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+			</div>
+		</div>
+
+	</div>
+
+
+</body>
+
+</html>
