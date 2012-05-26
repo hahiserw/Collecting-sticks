@@ -27,7 +27,7 @@ var httpd = http.createServer( function( request, response ) {
 httpd.listen( 20800 );
 
 
-var base = "/storage/www/htdocs/"
+//var _base = "/storage/www/htdocs/";
 
 var socketd = io.listen( httpd );
 
