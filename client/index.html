@@ -8,31 +8,166 @@
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 	<meta charset="utf-8" />
 	<meta name="author" content="Maurycy Skier" />
-	<meta name="description" content="Gra" />
-	<meta name="keywords" content="html5,experiment,javascript,game,Gra" />
+	<meta name="description" content="Collecting sticks" />
+	<meta name="keywords" content="html5,experiment,javascript,game,collecting,sticks,touhou,remilia,scarlet" />
 
-	<title>Gra</title>
+	<title>Collecting sticks</title>
 	
-
+<!-- 
 	<script src="/socket.io/socket.io.js"></script>
-
-	<script src="/lib/raf.js"></script>
 	
+	<script src="/lib/raf.js"></script>
+ -->
+
 	<script>
+		var io = {
+			connect: function(){
+				return {
+					on: function( event, done ) {
+						// console.log( "io got:", event );
+						done( {
+							MAP_WIDTH: 512,
+							MAP_HEIGHT: 384,
+							PLAYER_WIDTH: 32,
+							PLAYER_HEIGTH: 48,
+							modelFile: "RemiliaScarlet.png"
+						} );
+					}
+				};
+			}
+		};
 
 
 		( function() {
 
 
-			var WIDTH, HEIGHT;
-			var socket;
+			var status, server, canvas, ctx;
+
+			// Constants.
+			var
+				MAP_WIDTH = 0,
+				MAP_HEIGHT = 0,
+				PLAYER_WIDTH = 0,
+				PLAYER_HEIGTH = 0;
 
 
-			var sticks = {
+			var game = {
+
+				graphics: {
+					"player": "RemiliaScarlet.png",
+					"backgrounds": "Backgrounds.png",
+					"sticks": "Sticks.png"
+				},
+
+				say: function( text ) {
+
+					var now = new Date();
+					var
+						h = now.getHours(),
+						m = now.getMinutes(),
+						s = now.getSeconds(),
+						ss = now.getMilliseconds();
+					var time =
+						( h < 10? "0" + h: h ) + ":" +
+						( m < 10? "0" + m: m ) + ":" +
+						( s < 10? "0" + s: s ) + ":" +
+						( ss < 100? "0" +
+							( ss < 10? "0" + ss: ss ): ss );
+					
+					console.log( status.innerHTML = time + ": " + text );
+
+				},
+
+				init: function() {
+
+					status = document.getElementById( "status" );
+
+					this.say( "Initializing..." );
+
+					this.initCanvas();
+					this.connect( function( loadModel ) {
+						this.loadResources( loadModel );
+					} );
+
+				},
+
+				initCanvas: function() {
+
+					canvas = document.getElementById( "canvas" );
+					ctx = canvas.getContext( "2d" );
+
+					if( !ctx )
+						throw "Won't work in 100 years! Fire up browser supporting HTML5!";
+
+				},
+
+				connect: function( gotInit ) {
+
+					server = io.connect( document.location.origin );
+
+					if( !server )
+						throw "Can't load socket.io.";
+
+					server.on( "init", ( function( variables ) {
+
+						for( var i in variables ) {
+							var variable = variables[i];
+							if( typeof variable === "number" && isNaN( variable ) || variable == 0 ) 
+								throw "Init: Wrong variable.";
+						}
+
+						MAP_WIDTH = variables["MAP_WIDTH"];
+						MAP_HEIGHT = variables["MAP_HEIGHT"];
+						PLAYER_WIDTH = variables["PLAYER_WIDTH"];
+						PLAYER_HEIGTH = variables["PLAYER_HEIGHT"];
+						var modelFile = variables["modelFile"];
+						player.modelFile = modelFile;
+
+						gotInit.call( this, modelFile ); // Kinda lame.
+
+					} ).bind( this ) );
+
+				},
+
+				// To do: Make this function awesome 'cause it's extreme lame now.
+				loadResources: function( modelFile ) {
+
+					function event( name, error ) {
+						console.log( this.toString(), name, error );
+						// this.say( "Image " + name + ( error? " NOT": "" ) + " loaded." );
+					}
+
+					this.say( "Loading imags..." );
+
+					this.graphics["player"] = modelFile;
+
+					for( var name in this.graphics ) {
+						var file = this.graphics[name];
+						this.graphics[name] = new Image();
+						// this.graphics[name].addEventListener( "load", ( function( stuff ) {
+						// 	event.call( stuff["this"], stuff["name"] );
+						// } ).bind( { this: this, name: name } ), false );
+						// this.graphics[name].addEventListener( "error", event.call( this, name, true ), false );
+						// this.graphics[name].onerror = event;//.call( this, name, true );
+						this.graphics[name].src = "graphics/" + file;
+					}
+
+					// this.say( "Images loaded." ); // Nope! It isn't asynchronous.
+
+				}
+
+			};
+
+
+			var player = {
+
+				modelFile: "",
+
+				x: 0,
+				y: 0,
 
 				move: function( x, y ) {
-					// socket.emit( "position", { x, y } );
-					//https://github.com/mozilla/BrowserQuest/blob/master/client/js/game.js
+					// server.emit( "position", { x, y } );
 				}
 
 			};
@@ -40,56 +175,40 @@
 
 			document.addEventListener( "DOMContentLoaded", function() {
 
-				canvas = document.getElementById( "canvas" );
-				resize();
-
-				socket = io.connect( document.location.origin );
-
-				if( !canvas || !socket )
-					throw "Won't work in 100 years!";
+				game.init();
 
 			}, false );
 
 
 			function keyup( event ) {
 
-				var x = 0;
-				var y = 0;
+				var
+					x = 0,
+					y = 0;
 
+				// Up, down, left, right. WSAD.
 				switch( event.keyCode ) {
-					case 38: //Góra
+					case 38:
 					case 87:
 						y = 1;
 						break;
-					case 40: //Dół
+					case 40:
 					case 83:
 						y = -1
 						break;
-					case 37: //Lewo
+					case 37:
 					case 65:
 						x = -1;
 						break;
-					case 39: //Prawo
+					case 39:
 					case 68:
 						x = 1;
 						break;
 				}
 
-				sticks.move( x, y );
+				player.move( x, y );
 
 			}
-
-			
-			function resize() {
-
-				WIDTH = window.innerWidth;
-				HEIGHT = window.innerHeight;
-				canvas.setAttribute( "width", WIDTH );
-				canvas.setAttribute( "height", HEIGHT );
-
-			}
-
-			window.addEventListener( "resize", resize, false );
 
 			window.addEventListener( "keyup", keyup, false );
 
@@ -110,34 +229,34 @@
 			overflow: hidden;
 		}
 
-		#wrapper, #board {
-			width: 100%;
-			height: 100%;
+		#wrapper {
+			width: 600px;
+			margin: 0 auto;
 		}
 
 		#board {
+			text-align: center;
 		}
 
 		canvas {
+			margin: 10px 0 10px 0;
+		}
+
+		#status {
+			text-align: left;
 		}
 
 		#info {
-			position: absolute;
-			right: 0px;
-			top: 0px;
-			padding: 10px;
-			margin: 10px 30px;
-			width: 300px;
-			text-align: justify;
-			background-color: white;
+			margin: 20px 0 20px 0;
 		}
 
 		.title {
-			font-size: 26pt;
-			margin-bottom: 10px;
+			font-size: 34px;
+			margin: 20px;
 		}
 
 		.stuff {
+			/*text-align: justify;*/
 		}
 
 	</style>
@@ -150,16 +269,19 @@
 
 	<div id="wrapper">
 
+		<div class="title">Collecting sticks game</div>
+
 		<div id="board">
-			<canvas id="canvas">
+			<canvas id="canvas" width="512" height="384">
 				<p>Ta przeglądarka nie obsługuje tagu CANVAS</p>
 			</canvas>
+			<div id="status">Nothing.</div>
 		</div>
 
 		<div id="info">
-			<div class="title">Gra</div>
 			<div class="stuff">
-				Graphic from: http://media.photobucket.com/image/recent/Pipokary/RemiliaScarlet.png
+				Simple collecting game. I have used some sprites from touhou as player character. Control your figure wiht arrows or WSAD keys.
+				<a href="http://media.photobucket.com/image/recent/Pipokary/RemiliaScarlet.png">Remilia Scarlet sprite</a>
 			</div>
 		</div>
 
