@@ -15,11 +15,14 @@
 	
 <!-- 
 	<script src="/socket.io/socket.io.js"></script>
-	
 	<script src="/lib/raf.js"></script>
  -->
 
+ 	<script src="/lib/not_mine/raf.js"></script>
+	
 	<script>
+
+		// For testing purpose.
 		var io = {
 			connect: function(){
 				return {
@@ -29,7 +32,7 @@
 							MAP_WIDTH: 512,
 							MAP_HEIGHT: 384,
 							PLAYER_WIDTH: 32,
-							PLAYER_HEIGTH: 48,
+							PLAYER_HEIGTH: 32,
 							modelFile: "RemiliaScarlet.png"
 						} );
 					}
@@ -41,7 +44,7 @@
 		( function() {
 
 
-			var status, server, canvas, ctx;
+			var status, server, canvas, ctx, buffer, bctx;
 
 			// Constants.
 			var
@@ -55,7 +58,7 @@
 
 				graphics: {
 					"player": "RemiliaScarlet.png",
-					"backgrounds": "Backgrounds.png",
+					"background": "Background.png",
 					"sticks": "Sticks.png"
 				},
 
@@ -87,12 +90,15 @@
 					this.initCanvas();
 					this.connect( function( loadModel ) {
 						this.loadResources( loadModel );
+						this.setCanvas();
 					} );
 
 				},
 
 				initCanvas: function() {
 
+					buffer = document.createElement( "canvas" );
+					bctx = buffer.getContext( "2d" );
 					canvas = document.getElementById( "canvas" );
 					ctx = canvas.getContext( "2d" );
 
@@ -121,7 +127,6 @@
 						PLAYER_WIDTH = variables["PLAYER_WIDTH"];
 						PLAYER_HEIGTH = variables["PLAYER_HEIGHT"];
 						var modelFile = variables["modelFile"];
-						player.modelFile = modelFile;
 
 						gotInit.call( this, modelFile ); // Kinda lame.
 
@@ -137,9 +142,12 @@
 						// this.say( "Image " + name + ( error? " NOT": "" ) + " loaded." );
 					}
 
-					this.say( "Loading imags..." );
+					this.say( "Loading images..." );
 
 					this.graphics["player"] = modelFile;
+
+					// var total = this.graphics.length; // Lol, not an array.
+					// var element = 1;
 
 					for( var name in this.graphics ) {
 						var file = this.graphics[name];
@@ -149,38 +157,93 @@
 						// } ).bind( { this: this, name: name } ), false );
 						// this.graphics[name].addEventListener( "error", event.call( this, name, true ), false );
 						// this.graphics[name].onerror = event;//.call( this, name, true );
+						this.graphics[name].onerror = function() {
+							console.log( "Can't load an image." );
+						}
 						this.graphics[name].src = "graphics/" + file;
+						// console.log( "element", element, "file", file );
+						// if( element++ === total )
+						// 	this.say( "Done loading images." );
 					}
 
-					// this.say( "Images loaded." ); // Nope! It isn't asynchronous.
+				},
+
+				setCanvas: function() {
+					canvas.width = MAP_WIDTH;
+					canvas.height = MAP_HEIGHT;
+					buffer.width = MAP_WIDTH;
+					buffer.height = MAP_HEIGHT;
+					bctx.drawImage( this.graphics["player"], 0, 0/*, 32 * 4, 48 * 4*/ );
+				},
+
+				players: [
+					{
+						x: 256,
+						y: 192
+					}
+				],
+
+				move: { x: 0, y: 0 },
+
+				direction: 0,
+				frame: 0,
+
+				render: function() {
+
+					ctx.drawImage( this.graphics["background"], 0, 0 );
+
+					this.players[0].x += this.move.x;
+					this.players[0].y += this.move.y;
+
+					// Totally lame.
+					if( this.move.x || this.move.y )
+						if( new Date().getMilliseconds() % 10 === 0 )
+							if( this.frame++ > 2 )
+								this.frame = 0;
+
+					for( var i in this.players ) {
+						var player = this.players[i];
+						if( this.move.y === 1 )
+							this.direction = 0;
+						if( this.move.x === -1 )
+							this.direction = 1;
+						if( this.move.x === 1 )
+							this.direction = 2;
+						if( this.move.y === -1 )
+							this.direction = 3;
+						var character = bctx.getImageData( this.frame * 32, this.direction * 48, 32, 48 );
+						ctx.putImageData( character, player.x, player.y );
+					}
 
 				}
 
 			};
-
-
-			var player = {
-
-				modelFile: "",
-
-				x: 0,
-				y: 0,
-
-				move: function( x, y ) {
-					// server.emit( "position", { x, y } );
-				}
-
-			};
-
 
 			document.addEventListener( "DOMContentLoaded", function() {
 
+				var handle;
+
 				game.init();
+
+				function update() {
+
+					handle = requestAnimationFrame( update );
+
+					try {
+						game.render();
+					} catch( error ) {
+						throw error.message;
+						cancelAnimationFrame( handle );
+					}
+
+				}
+
+				update();
 
 			}, false );
 
 
-			function keyup( event ) {
+			function key( event ) {
 
 				var
 					x = 0,
@@ -190,11 +253,11 @@
 				switch( event.keyCode ) {
 					case 38:
 					case 87:
-						y = 1;
+						y = -1;
 						break;
 					case 40:
 					case 83:
-						y = -1
+						y = 1
 						break;
 					case 37:
 					case 65:
@@ -206,11 +269,19 @@
 						break;
 				}
 
-				player.move( x, y );
+				return { x: x, y: y };
+
 
 			}
 
-			window.addEventListener( "keyup", keyup, false );
+			window.addEventListener( "keydown", function( e ) {
+				game.move.x = key( e ).x;
+				game.move.y = key( e ).y;
+			}, false );
+			window.addEventListener( "keyup", function() {
+				game.move.x = 0;
+				game.move.y = 0;
+			}, false );
 
 
 		} () );

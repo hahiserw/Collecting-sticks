@@ -41,7 +41,7 @@ var
 	MAP_WIDTH: 512,
 	MAP_HEIGHT: 384,
 	PLAYER_WIDTH: 32,
-	PLAYER_HEIGTH: 48;
+	PLAYER_HEIGTH: 32;
 
 var
 	rangeX = MAP_WIDTH - PLAYER_WIDTH,
@@ -53,7 +53,7 @@ server.on( "connection", function( client ) {
 
 	// Create player with random positions.
 	data.players[client.id] = {
-		modelFile: "RemiliaScarlet.png", // Comming soon. xD
+		modelFile: "RemiliaScarlet.png", // More comming soon. xD
 		x: Math.random() * rangeX | 0,
 		y: Math.random() * rangeY | 0,
 		points: 0
