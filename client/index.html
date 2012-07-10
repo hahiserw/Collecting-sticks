@@ -12,14 +12,13 @@
 	<meta name="keywords" content="html5,experiment,javascript,game,collecting,sticks,touhou,remilia,scarlet" />
 
 	<title>Collecting sticks</title>
-	
-<!-- 
+<!--
 	<script src="/socket.io/socket.io.js"></script>
 -->
 
- 	<script src="lib/raf.js"></script>
-	
 	<script src="lib/game.js"></script>
+	
+ 	<script src="lib/raf.js"></script>
 
 	<script>
 
@@ -40,6 +39,55 @@
 				};
 			}
 		};
+
+
+		document.addEventListener( "DOMContentLoaded", function() {
+
+			game.launch();
+
+		}, false );
+
+
+		function key( event ) {
+
+			var
+				x = 0,
+				y = 0;
+
+			// Up, down, left, right. WSAD.
+			// No WSAD, chat.
+			switch( event.keyCode ) {
+				case 38:
+				// case 87:
+					y = -1;
+					break;
+				case 40:
+				// case 83:
+					y = 1
+					break;
+				case 37:
+				// case 65:
+					x = -1;
+					break;
+				case 39:
+				// case 68:
+					x = 1;
+					break;
+			}
+
+			return { x: x, y: y };
+
+		}
+
+		window.addEventListener( "keydown", function( e ) {
+			game.players[0].move.x = key( e ).x;
+			game.players[0].move.y = key( e ).y;
+		}, false );
+		window.addEventListener( "keyup", function() {
+			game.players[0].move.x = 0;
+			game.players[0].move.y = 0;
+		}, false );
+
 
 	</script>
 

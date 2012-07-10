@@ -1,4 +1,4 @@
-( function() {
+// ( function() {
 
 
 	var status, server, canvas, ctx, buffer, bctx;
@@ -15,7 +15,7 @@
 
 		graphics: {
 			"player": "RemiliaScarlet.png",
-			"background": "Background.png",
+			"background": "Pyura.png",
 			"sticks": "Sticks.png"
 		},
 
@@ -38,7 +38,27 @@
 
 		},
 
-		init: function() {
+		launch: function() {
+
+			var handle;
+
+			function update() {
+
+				handle = requestAnimationFrame( update );
+
+				// try {
+					game.render();
+				// } catch( error ) {
+				// 	cancelAnimationFrame( handle );
+				// 	throw error.message
+				// }
+
+			}
+
+			this.init( update );
+		},
+
+		init: function( done ) {
 
 			status = document.getElementById( "status" );
 
@@ -53,6 +73,9 @@
 					this.say( "Done loading all resources." );
 					this.say( "Preparing game environment." );
 					this.setCanvas();
+					this.say( "Environment prepared." );
+					this.say( "Launching game." );
+					done();
 				} );
 			} );
 
@@ -100,9 +123,21 @@
 		// To do: Make this function awesome 'cause it's extreme lame now.
 		loadResources: function( modelFile, doneLoading ) {
 
-			function event( name, error ) {
-				console.log( this.toString(), name, error );
-				// this.say( "Image " + name + ( error? " NOT": "" ) + " loaded." );
+			function loadImage( name, fileName, loaded ) {
+
+				var that = this;
+
+				var image = new Image();
+				image.addEventListener( "load", function() {
+					that.say( "Loaded succesfuly: " + fileName + "." );
+					that.graphics[name] = image;
+					loaded.call( that, image );
+				} );
+				image.addEventListener( "error", function() {
+					that.say( "Error loading image: " + fileName + "." );
+				} );
+				image.src = "graphics/" + fileName;
+
 			}
 
 			this.graphics["player"] = modelFile;
@@ -115,26 +150,12 @@
 
 			for( var name in this.graphics ) {
 
-				var file = this.graphics[name];
-				this.graphics[name] = new Image();
-				// this.graphics[name].addEventListener( "load", ( function( stuff ) {
-				// 	event.call( stuff["this"], stuff["name"] );
-				// } ).bind( { this: this, name: name } ), false );
-				// this.graphics[name].addEventListener( "error", event.call( this, name, true ), false );
-				// this.graphics[name].onerror = event;//.call( this, name, true );
-				this.graphics[name].onload = function() {
+				loadImage.call( this, name, this.graphics[name], function( image ) {
+					// this.graphics[name] = image;
 					loaded++;
-					console.log( "Done loading image " + loaded + " out of " + total );
 					if( loaded === total )
-						doneLoading.call( game );
-				}
-				this.graphics[name].onerror = function() {
-					console.log( "Can't load an image." );
-				}
-				this.graphics[name].src = "graphics/" + file;
-				// console.log( "element", element, "file", file );
-				// if( element++ === total )
-				// 	this.say( "Done loading images." );
+						doneLoading.call( this );
+				} );
 
 			}
 
@@ -144,18 +165,19 @@
 
 			canvas.width = MAP_WIDTH;
 			canvas.height = MAP_HEIGHT;
-			buffer.width = MAP_WIDTH;
-			buffer.height = MAP_HEIGHT;
+			buffer.width = 32 * 4; // MAP_WIDTH;
+			buffer.height = 48 * 4; // MAP_HEIGHT;
 
-			bctx.drawImage( this.graphics["player"], 0, 0/*, 32 * 4, 48 * 4*/ );
+			bctx.clearRect( 0, 0, buffer.width, buffer.height );
+			bctx.drawImage( this.graphics["player"], 0, 0 );
 
 		},
 
 		players: [
 			{
 				move: { x: 0, y: 0 },
-				x: 256,
-				y: 192,
+				x: 512 / 2 - 32 / 2,
+				y: 384 / 2 - 48 / 2 + 24 / 2,
 				walked: 0,
 				direction: 0,
 				frame: 0,
@@ -175,7 +197,7 @@
 
 			// Draw players with greater y first. For warstwy proper display.
 
-			// Change frame every 8 pixels(?).
+			// Change frame every 12 pixels (or I should say frames).
 			if( this.players[0].move.x || this.players[0].move.y ) {
 
 				this.players[0].x += this.players[0].move.x;
@@ -184,14 +206,16 @@
 				this.players[0].walked++;
 
 				if( this.players[0].walked % 12 === 0 )
-					if( ++this.players[0].frame > 3 ) // 0, 1, 2, 3
+					if( ++this.players[0].frame > 3 )
 						this.players[0].frame = 0;
+
 			}
 
 			for( var i in this.players ) {
 
 				// If one players is COL_HEIGHT odległości from another chceck whom y is greater and draw him first.
 				// Player visible area is 48x32, but collision area is 32xCOL_HEIGHT.
+				// Let's say COL_HEIGHT is 24.
 
 				var player = this.players[i];
 
@@ -204,11 +228,9 @@
 				if( player.move.y === -1 )
 					player.direction = 3;
 
+				// How to make this background transparent?
 				var character = bctx.getImageData( player.frame * 32, player.direction * 48, 32, 48 );
-				// console.log( player.frame, player.direction );
-				// ctx.drawImage( this.graphics["player"], player.x, player.y );
 				ctx.putImageData( character, player.x, player.y );
-				// ctx.putImageData( bctx.getImageData( 0, 0, 32, 48 ), 0, 0 );
 
 			}
 
@@ -216,68 +238,5 @@
 
 	};
 
-	document.addEventListener( "DOMContentLoaded", function() {
 
-		var handle;
-
-		game.init();
-
-		function update() {
-
-			handle = requestAnimationFrame( update );
-
-			// try {
-				game.render();
-			// } catch( error ) {
-			// 	throw error.message;
-			// 	cancelAnimationFrame( handle );
-			// }
-
-		}
-
-		update();
-
-	}, false );
-
-
-	function key( event ) {
-
-		var
-			x = 0,
-			y = 0;
-
-		// Up, down, left, right. WSAD.
-		switch( event.keyCode ) {
-			case 38:
-			case 87:
-				y = -1;
-				break;
-			case 40:
-			case 83:
-				y = 1
-				break;
-			case 37:
-			case 65:
-				x = -1;
-				break;
-			case 39:
-			case 68:
-				x = 1;
-				break;
-		}
-
-		return { x: x, y: y };
-
-	}
-
-	window.addEventListener( "keydown", function( e ) {
-		game.players[0].move.x = key( e ).x;
-		game.players[0].move.y = key( e ).y;
-	}, false );
-	window.addEventListener( "keyup", function() {
-		game.players[0].move.x = 0;
-		game.players[0].move.y = 0;
-	}, false );
-
-
-} () );
+// } () );
