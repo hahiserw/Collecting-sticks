@@ -15,7 +15,7 @@
 
 		graphics: {
 			"player": "RemiliaScarlet.png",
-			"background": "Pyura.png",
+			"background": "Space.jpg",
 			"sticks": "Sticks.png"
 		},
 
