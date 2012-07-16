@@ -12,12 +12,13 @@
 var
 	http = require( "http" ),
 	fs = require( "fs" ),
-	io = require( "socket.io" );
+	io = require( "socket.io" ),
+	__clientdir = __dirname + "/../client";
 
 
 var httpd = http.createServer( function( request, response ) {
 
-	fs.readFile( __dirname + "/index.html", function( error, data ) {
+	fs.readFile( __clientdir + "/index.html", function( error, data ) {
 		if( error ) {
 			response.writeHead( 500 );
 			response.end( "Error loading file." );
@@ -41,7 +42,7 @@ var
 	MAP_WIDTH: 512,
 	MAP_HEIGHT: 384,
 	PLAYER_WIDTH: 32,
-	PLAYER_HEIGTH: 32;
+	PLAYER_HEIGHT: 48;
 
 var
 	rangeX = MAP_WIDTH - PLAYER_WIDTH,
