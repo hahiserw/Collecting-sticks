@@ -255,7 +255,7 @@
 
 		drawPoints: function() {
 
-			//
+			// Icon of character or thumbnail followed by a number.
 
 		}
 
@@ -263,3 +263,12 @@
 
 
 // } () );
+
+/*
+var Player = {
+	model: "",
+	x: 0,
+	y: 0,
+
+}
+*/
