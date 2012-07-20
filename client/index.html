@@ -15,10 +15,11 @@
 <!--
 	<script src="/socket.io/socket.io.js"></script>
 -->
-
-	<script src="scripts/game.js"></script>
 	
  	<script src="scripts/raf.js"></script>
+
+	<script src="scripts/player.js"></script>
+	<script src="scripts/game.js"></script>
 
 	<script>
 
@@ -29,11 +30,17 @@
 					on: function( event, done ) {
 						// console.log( "io got:", event );
 						done( {
-							MAP_WIDTH: 512,
-							MAP_HEIGHT: 384,
-							PLAYER_WIDTH: 32,
-							PLAYER_HEIGHT: 48,
-							modelFile: "RemiliaScarlet.png"
+							files: {
+								players: [ "Remilia", "Remilia2", "Asuka", "FunkyPencil", "Milonar", "Wesker" ],
+								backgrounds: [ "Grass" ],
+								items: [ "Sticks" ]
+							},
+							player: {
+								model: "Wesker",
+								x: 512 / 2 - 32 / 2,
+								y: 384 / 2 - 32 / 2 + 16,
+								points: 0
+							}
 						} );
 					}
 				};
@@ -48,43 +55,18 @@
 		}, false );
 
 
-		// Yeah, lame.
-		var pressed = false;
-
-		function key( event ) {
-
-			var
-				x = 0,
-				y = 0;
-
-			if( pressed )
-				switch( event.keyCode ) {
-					case 38:
-						y = -1;
-						break;
-					case 40:
-						y = 1;
-						break;
-					case 37:
-						x = -1;
-						break;
-					case 39:
-						x = 1;
-						break;
-				}
-
-			pressed = true;
-
-			game.players[0].move.x = x;
-			game.players[0].move.y = y;
-
+		// Player input: http://www.lostdecadegames.com/how-to-make-a-simple-html5-canvas-game/
+		function keyChange( event ) {
+			var key = event.keyCode;// || event.which || window.event;
+			if( key < 37 || key > 40 )
+				return;
+			var direction = key - 37;
+			game.keys[direction] = ( event.type === "keydown" );
+			event.preventDefault();
 		}
 
-		window.addEventListener( "keydown", key, false );
-		window.addEventListener( "keyup", function() {
-			pressed = false;
-			key();
-		}, false );
+		window.addEventListener( "keydown", keyChange, false );
+		window.addEventListener( "keyup", keyChange, false );
 
 
 	</script>
@@ -97,7 +79,6 @@
 			border: 0;
 			margin: 0;
 			padding: 0;
-			overflow: hidden;
 		}
 
 		#wrapper {
@@ -144,14 +125,23 @@
 
 		<div id="board">
 			<canvas id="canvas" width="512" height="384">
-				<p>Ta przeglądarka nie obsługuje tagu CANVAS</p>
+				<p>This browser doesn't support CANVAS tag. Visit this page in other browser.</p>
 			</canvas>
+			<noscript>
+				<p>You won't play without enabled JavaScript.</p>
+			</noscript>
 		</div>
 
 		<div id="info">
 			<div class="stuff">
-				Simple collecting game. I have used some sprites from touhou for a player character. Control your figure wiht arrows keys.
-				<a href="http://media.photobucket.com/image/recent/Pipokary/RemiliaScarlet.png">Remilia Scarlet sprite</a>
+				Simple collecting game. Sprites comes from internet. This game isn't finished yet. Sprites are for testing now. I'll ask authors for permision if i'd like to use these images. It is not strange if you didn't understand what I wrote.
+				<ul>
+					<li><a href="http://milonar.deviantart.com/art/Homework-2-Milonar-Sprite-Ver-2-288702092">Milonar</a></li>
+					<li><a href="http://kangeburu.deviantart.com/art/Wesker-sprite-280875235">Wesker</a></li>
+					<li><a href="http://funkypencil.deviantart.com/#/d37g1o6">FunkyPencil</a></li>
+					<li><a href="http://www.rpgrevolution.com/forums/lofiversion/index.php/t20925-300.html">Remilia Scarlet 2</a></li>
+					<li><a href="http://facepunch.com/showthread.php?t=932844">Asuka</a></li>
+				</ul>
 			</div>
 
 		</div>

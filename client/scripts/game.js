@@ -1,22 +1,25 @@
 // ( function() {
 
 
-	var log, server, canvas, ctx, buffer, bctx;
+	var log, server, canvas, ctx, you;
 
 	// Constants.
 	var
-		MAP_WIDTH = 0,
-		MAP_HEIGHT = 0,
-		PLAYER_WIDTH = 0,
-		PLAYER_HEIGTH = 0;
+		MAP_WIDTH = 512,
+		MAP_HEIGHT = 384,
+		PLAYER_WIDTH = 32,
+		PLAYER_HEIGHT = 48;
 
 
 	var game = {
 
+		files: {},
+
 		graphics: {
-			"player": "RemiliaScarlet.png",
-			"background": "Space.jpg",
-			"sticks": "Sticks.png"
+			set: {},
+			players: {},
+			backgrounds: {},
+			items: {}
 		},
 
 		say: function( text ) {
@@ -57,6 +60,7 @@
 			}
 
 			this.init( canvasId, statusId, update );
+
 		},
 
 		init: function( canvasId, statusId, done ) {
@@ -67,10 +71,10 @@
 			this.say( "Creating game environment." );
 			this.initCanvas( canvasId );
 			this.say( "Connecting to server..." );
-			this.connect( function( loadModel ) {
+			this.connect( function() {
 				this.say( "Connected to server." );
 				this.say( "Loading resources..." );
-				this.loadResources( loadModel, function() {
+				this.loadResources( function() {
 					this.say( "Done loading all resources." );
 					this.say( "Preparing game environment." );
 					this.setCanvas();
@@ -84,8 +88,6 @@
 
 		initCanvas: function( id ) {
 
-			// buffer = document.createElement( "canvas" );
-			// bctx = buffer.getContext( "2d" );
 			canvas = document.getElementById( id );
 			ctx = canvas.getContext( "2d" );
 
@@ -101,64 +103,72 @@
 			if( !server )
 				throw "Can't load socket.io.";
 
-			server.on( "init", ( function( variables ) {
+			server.on( "init", ( function( data ) {
 
-				for( var i in variables ) {
-					var variable = variables[i];
-					if( typeof variable === "number" && isNaN( variable ) || variable == 0 ) 
-						throw "Init: Wrong variable.";
-				}
+				this.files = data.files;
+				var player = data.player;
 
-				MAP_WIDTH = variables["MAP_WIDTH"];
-				MAP_HEIGHT = variables["MAP_HEIGHT"];
-				PLAYER_WIDTH = variables["PLAYER_WIDTH"];
-				PLAYER_HEIGHT = variables["PLAYER_HEIGHT"];
-				var modelFile = variables["modelFile"];
+				you = new Player( player.model, player.x, player.y );
+				
+				this.players.push( you );
+				// First one.
+				this.graphics.set["background"] = this.files.backgrounds[0];
+				this.graphics.set["sticks"] = this.files.items[0];
 
-				gotInit.call( this, modelFile ); // Kinda lame.
+				gotInit.call( this );
 
 			} ).bind( this ) );
 
 		},
 
 		// To do: Make this function awesome 'cause it's somehow lame now.
-		loadResources: function( modelFile, doneLoading ) {
+		loadResources: function( doneLoading ) {
 
-			function loadImage( name, fileName, loaded ) {
+			function loadImage( type, fileName, loaded ) {
 
 				var that = this;
 
+				var extension = "";
+
+				if( fileName.indexOf( "." ) === -1 )
+					extension = ".png";
+
 				var image = new Image();
+
 				image.addEventListener( "load", function() {
-					that.say( "Loaded succesfuly: " + fileName + "." );
-					that.graphics[name] = image;
-					loaded.call( that, image );
+					that.say( "Loaded succesfuly: " + fileName + extension + "." );
+					loaded.call( that, type, fileName, image );
 				} );
+
 				image.addEventListener( "error", function() {
-					that.say( "Error loading image: " + fileName + "." );
+					that.say( "Error loading image: " + fileName + extension + "." );
 				} );
-				image.src = "graphics/" + fileName;
+
+				image.src = "graphics/" + fileName + extension;
 
 			}
-
-			this.graphics["player"] = modelFile;
 
 			var
 				total = 0,
 				loaded = 0;
 
-			for( var name in this.graphics )
-				total++;
+			for( var type in this.files )
+				for( var name in this.files[type] )
+					total++;
 
-			for( var name in this.graphics ) {
-
-				loadImage.call( this, name, this.graphics[name], function( image ) {
-					// this.graphics[name] = image;
-					loaded++;
-					if( loaded === total )
-						doneLoading.call( this );
-				} );
-
+			for( var type in this.files ) {
+				if( !this.graphics[type] )
+					this.graphics[type] = {};
+				for( var name in this.files[type] ) {
+					var fileName = this.files[type][name];
+					loadImage.call( this, type, fileName, function( type, fileName, resource ) {
+						loaded++;
+						// console.log( type, fileName );
+						this.graphics[type][fileName] = resource;
+						if( loaded === total )
+							doneLoading.call( this );
+					} );
+				}
 			}
 
 		},
@@ -167,34 +177,30 @@
 
 			canvas.width = MAP_WIDTH;
 			canvas.height = MAP_HEIGHT;
-			// buffer.width = 32 * 4; // MAP_WIDTH;
-			// buffer.height = 48 * 4; // MAP_HEIGHT;
 
-			// bctx.clearRect( 0, 0, buffer.width, buffer.height );
-			// bctx.drawImage( this.graphics["player"], 0, 0 );
+			ctx.font = "20px monospace";
+
+			canvas.addEventListener( "click", function( event ) {
+				var
+					x = event.pageX - this.offsetLeft,
+					y = event.pageY - this.offsetTop;
+				you.goTo( x, y );
+			}, false );
 
 		},
 
 		players: [
-			{
-				move: { x: 0, y: 0 },
-				x: 512 / 2 - 32 / 2,
-				y: 384 / 2 - 48 / 2 + 24 / 2,
-				walked: 0,
-				direction: 0,
-				frame: 0,
-			}
 		],
 
+		keys: [],
 
 		render: function() {
 
-			ctx.drawImage( this.graphics["background"], 0, 0 );
+			ctx.drawImage( this.graphics["backgrounds"]["Grass"], 0, 0 );
 
 			// this.drawSticks();
 
-			// Chceck position change.
-			// 
+			this.playerMove();
 
 			this.drawPlayers();
 
@@ -202,51 +208,56 @@
 
 		},
 
+		playerMove: function() {
+
+			// One key at the time.
+			var key = this.keys.indexOf( true );
+			
+			if( key !== -1 ) {
+
+				switch( key ) {
+					case 0:
+						you.move( -1, 0 );
+						break;
+					case 1:
+						you.move( 0, -1 );
+						break;
+					case 2:
+						you.move( 1, 0 );
+						break;
+					case 3:
+						you.move( 0, 1 );
+						break;
+				}
+
+			}
+
+		},
+
 		drawPlayers: function() {
 
-			// Draw players with greater y first. For warstwy proper display.
+			// Draw players with greater y first.
 			// Sort array every frame? D:
 			// this.players.sort( function( a, b ) {
 			// 	return a.y - b.y;
 			// } );
-
-			// Change frame every 12 pixels (or I should say frames).
-			// That's not good, though.
-			if( this.players[0].move.x || this.players[0].move.y ) {
-
-				this.players[0].x += this.players[0].move.x;
-				this.players[0].y += this.players[0].move.y;
-
-				this.players[0].walked++;
-
-				if( this.players[0].walked % 12 === 0 )
-					if( ++this.players[0].frame > 3 )
-						this.players[0].frame = 0;
-
-			}
 
 			for( var i in this.players ) {
 
 				// If one players is COL_HEIGHT odległości from another chceck whom y is greater and draw him first.
 				// Player visible area is 48x32, but collision area is 32xCOL_HEIGHT.
 				// Let's say COL_HEIGHT is 24.
+				// Collision will be checking on server. Right?
 
 				var player = this.players[i];
 
-				if( player.move.y === 1 )
-					player.direction = 0;
-				if( player.move.x === -1 )
-					player.direction = 1;
-				if( player.move.x === 1 )
-					player.direction = 2;
-				if( player.move.y === -1 )
-					player.direction = 3;
+				player.tick();
 
 				ctx.drawImage(
-					this.graphics["player"],
-					player.frame * PLAYER_WIDTH, player.direction * PLAYER_HEIGHT,
+					this.graphics["players"][player.model],
+					player.getFrame() * PLAYER_WIDTH, player.getDirection() * PLAYER_HEIGHT,
 					PLAYER_WIDTH, PLAYER_HEIGHT,
-					player.x, player.y,
+					player.getX(), player.getY(),
 					PLAYER_WIDTH, PLAYER_HEIGHT );
 
 			}
@@ -255,7 +266,29 @@
 
 		drawPoints: function() {
 
+			var
+				y = 0,
+				spaceX = PLAYER_WIDTH / 3,
+				spaceY = PLAYER_HEIGHT / 3 + 10;
+
 			// Icon of character or thumbnail followed by a number.
+			for( var i in this.players ) {
+
+				var player = this.players[i];
+
+				y += spaceY;
+
+				ctx.drawImage(
+					this.graphics["players"][player.model],
+					player.getFrame() * PLAYER_WIDTH, player.getDirection() * PLAYER_HEIGHT,
+					PLAYER_WIDTH, PLAYER_HEIGHT,
+					spaceX, y,
+					PLAYER_WIDTH / 2, PLAYER_HEIGHT / 2 );
+
+				// No style is set.
+				ctx.fillText( player.getPoints(), 3 * spaceX, y + 20/*, width*/ );
+
+			}
 
 		}
 
@@ -264,11 +297,16 @@
 
 // } () );
 
-/*
-var Player = {
-	model: "",
-	x: 0,
-	y: 0,
+
+// Perhaps it is not good to create all players every position change.
+// Perhaps it will create player only when he connect.
+
+
+function sendPositions() {
+
+	var positions = { x: you.getX(), y: you.getY() };
+	client.emit( "positions", positions );
 
 }
-*/
+
+// setInterval( sendPositions, 1000 );
