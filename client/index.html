@@ -12,11 +12,10 @@
 	<meta name="keywords" content="html5,experiment,javascript,game,collecting,sticks,touhou,remilia,scarlet" />
 
 	<title>Collecting sticks</title>
-<!--
+
 	<script src="/socket.io/socket.io.js"></script>
--->
-	
- 	<script src="scripts/raf.js"></script>
+
+	<script src="scripts/raf.js"></script>
 
 	<script src="scripts/player.js"></script>
 	<script src="scripts/game.js"></script>
@@ -24,44 +23,60 @@
 	<script>
 
 		// For testing purpose.
-		var io = {
+		var clientTest = {
 			connect: function(){
 				return {
 					on: function( event, done ) {
-						// console.log( "io got:", event );
-						done( {
-							files: {
-								players: [ "Remilia", "Remilia2", "Asuka", "FunkyPencil", "Milonar", "Wesker" ],
-								backgrounds: [ "Grass" ],
-								items: [ "Sticks" ]
+						// var doneee = function(){};
+						console.log( "client watching and got:", event );
+						data = {
+							"init": {
+								files: {
+									players: [ "Remilia", "Remilia2", "Asuka", "FunkyPencil", "Milonar", "Wesker" ],
+									backgrounds: [ "Grass" ],
+									items: [ "Sticks" ]
+								},
+								player: {
+									model: "Wesker",
+									x: 512 / 2 - 32 / 2,
+									y: 384 / 2 - 32 / 2 + 16,
+									points: 0
+								}
 							},
-							player: {
-								model: "Wesker",
-								x: 512 / 2 - 32 / 2,
-								y: 384 / 2 - 32 / 2 + 16,
-								points: 0
+							"data": {
+								"Remilia": { x: 100, y: 100, message: "Remilia!" }
+							},
+							"join": {
+								"Wesker": { x: 200, y: 200 }
 							}
-						} );
-					}
+						};
+						done( data[event] );
+					},
+					emit: function( event, data ) {
+						console.log( "client sent:", data );
+					},
+					fake: true
 				};
 			}
 		};
+		var io = io? io: clientTest;
 
 
 		document.addEventListener( "DOMContentLoaded", function() {
 
-			game.launch( "canvas", "status" );
+			Game.launch( "canvas", "status" );
 
 		}, false );
 
 
 		// Player input: http://www.lostdecadegames.com/how-to-make-a-simple-html5-canvas-game/
+		// var writing = false; // Chat coming soon.
 		function keyChange( event ) {
 			var key = event.keyCode;// || event.which || window.event;
 			if( key < 37 || key > 40 )
 				return;
 			var direction = key - 37;
-			game.keys[direction] = ( event.type === "keydown" );
+			Game.keys[direction] = ( event.type === "keydown" );
 			event.preventDefault();
 		}
 
@@ -95,7 +110,10 @@
 		}
 
 		#status {
-			text-align: left;
+			height: 100px;
+			overflow: auto;
+			padding: 0 3px;
+			border: 1px solid black;
 		}
 
 		#info {
@@ -108,7 +126,6 @@
 		}
 
 		.stuff {
-			/*text-align: justify;*/
 		}
 
 	</style>
@@ -134,7 +151,7 @@
 
 		<div id="info">
 			<div class="stuff">
-				Simple collecting game. Sprites comes from internet. This game isn't finished yet. Sprites are for testing now. I'll ask authors for permision if i'd like to use these images. It is not strange if you didn't understand what I wrote.
+				Simple collecting game. Sprites comes from internet. This game isn't finished yet. Sprites are for testing now. I think I'll ask authors for permision if i'd like to use these images. It is not strange if you didn't understand what I wrote.
 				<ul>
 					<li><a href="http://milonar.deviantart.com/art/Homework-2-Milonar-Sprite-Ver-2-288702092">Milonar</a></li>
 					<li><a href="http://kangeburu.deviantart.com/art/Wesker-sprite-280875235">Wesker</a></li>
